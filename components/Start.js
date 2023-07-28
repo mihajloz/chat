@@ -8,11 +8,27 @@ import {
   ImageBackground,
   KeyboardAvoidingView,
 } from "react-native";
+import { getAuth, signInAnonymously } from "firebase/auth";
 
 const Start = ({ navigation }) => {
   const [name, setName] = useState("");
-
   const [selectedColor, setSelectedColor] = useState("#090C08");
+  const auth = getAuth(); // Initialize Firebase Authentication
+
+  const handleStartChatting = () => {
+    signInAnonymously(auth)
+      .then((userCredential) => {
+        const user = userCredential.user;
+        navigation.navigate("Chat", {
+          userId: user.uid,
+          name: name,
+          selectedColor: selectedColor,
+        });
+      })
+      .catch((error) => {
+        // Handle sign-in error here if needed
+      });
+  };
 
   const handleColorSelect = (color) => {
     setSelectedColor(color);
@@ -58,12 +74,7 @@ const Start = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.startChattingButton}
-            onPress={() =>
-              navigation.navigate("Chat", {
-                name: name,
-                selectedColor: selectedColor,
-              })
-            }
+            onPress={handleStartChatting}
           >
             <Text style={styles.buttonText}>Start Chatting</Text>
           </TouchableOpacity>

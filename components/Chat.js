@@ -1,19 +1,45 @@
 import { useState, useEffect } from "react";
 import { StyleSheet, View, Text, KeyboardAvoidingView } from "react-native";
 import { GiftedChat, Bubble } from "react-native-gifted-chat";
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  addDoc,
+} from "firebase/firestore";
 
-const Chat = ({ route, navigation }) => {
+const Chat = ({ route, navigation, db }) => {
   // Extracting 'name' and 'selectedColor' from the route parameters
-  const { name, selectedColor } = route.params;
+  const { name, selectedColor, userId } = route.params;
+
+  console.log(userId);
 
   // State to manage the chat messages
   const [messages, setMessages] = useState([]);
 
+  useEffect(() => {
+    navigation.setOptions({ title: name });
+    const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
+    const unsubMessages = onSnapshot(q, (docs) => {
+      let newMessages = [];
+      docs.forEach((doc) => {
+        newMessages.push({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: new Date(doc.data().createdAt.toMillis()),
+        });
+      });
+      setMessages(newMessages);
+    });
+    return () => {
+      if (unsubMessages) unsubMessages();
+    };
+  }, []);
+
   // Function to handle sending new messages
   const onSend = (newMessages) => {
-    setMessages((previousMessages) =>
-      GiftedChat.append(previousMessages, newMessages)
-    );
+    addDoc(collection(db, "messages"), newMessages[0]);
   };
 
   // Customizing the appearance of the chat bubbles
@@ -38,38 +64,6 @@ const Chat = ({ route, navigation }) => {
     navigation.setOptions({ title: name });
   }, []);
 
-  // Initializing the chat messages with some initial messages
-  useEffect(() => {
-    setMessages([
-      {
-        _id: 3,
-        text: "Hello chat",
-        createdAt: new Date(),
-        user: {
-          _id: 1,
-          name: "React Native",
-          avatar: "https://via.placeholder.com/140x140",
-        },
-      },
-      {
-        _id: 2,
-        text: "Hello developer",
-        createdAt: new Date(),
-        user: {
-          _id: 2,
-          name: "React Native",
-          avatar: "https://via.placeholder.com/140x140",
-        },
-      },
-      {
-        _id: 1,
-        text: "You entered the chat",
-        createdAt: new Date(),
-        system: true, // Indicates a system message
-      },
-    ]);
-  }, []);
-
   return (
     <View style={[styles.container, { backgroundColor: selectedColor }]}>
       {/* GiftedChat component to display the chat interface */}
@@ -78,7 +72,8 @@ const Chat = ({ route, navigation }) => {
         renderBubble={renderBubble}
         onSend={(messages) => onSend(messages)}
         user={{
-          _id: 1, // Current user's ID (in this case, it's set to 1)
+          _id: userId, // Current user's ID (user ID extracted from route.params)
+          name: name, // Current user's name (name extracted from route.params)
         }}
       />
       {Platform.OS === "android" ? (
