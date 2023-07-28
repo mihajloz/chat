@@ -9,6 +9,7 @@ import { getFirestore } from "firebase/firestore";
 
 const Stack = createNativeStackNavigator();
 
+// Firebase configuration with credentials
 const firebaseConfig = {
   apiKey: "AIzaSyBHqNJtqUogLWd7o4PT4PnDRyTQcjntCJw",
   authDomain: "chat-20b32.firebaseapp.com",
@@ -29,6 +30,7 @@ const App = () => {
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Start">
         <Stack.Screen name="Start" component={Start} />
+        {/* 'db' prop carries the Firestore database reference */}
         <Stack.Screen name="Chat">
           {(props) => <Chat {...props} db={db} />}
         </Stack.Screen>

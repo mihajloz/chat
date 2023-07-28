@@ -13,11 +13,12 @@ const Chat = ({ route, navigation, db }) => {
   // Extracting 'name' and 'selectedColor' from the route parameters
   const { name, selectedColor, userId } = route.params;
 
-  console.log(userId);
+  // console.log(userId);
 
   // State to manage the chat messages
   const [messages, setMessages] = useState([]);
 
+  // Fetching the initial chat messages from Firestore using useEffect and onSnapshot
   useEffect(() => {
     navigation.setOptions({ title: name });
     const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
@@ -49,10 +50,10 @@ const Chat = ({ route, navigation, db }) => {
         {...props}
         wrapperStyle={{
           right: {
-            backgroundColor: "#000", // Background color for messages sent by the current user
+            backgroundColor: "#2294fb", // Background color for messages sent by the current user
           },
           left: {
-            backgroundColor: "#FFF", // Background color for messages sent by other users
+            backgroundColor: "#d8d8d8", // Background color for messages sent by other users
           },
         }}
       />

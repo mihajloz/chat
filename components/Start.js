@@ -11,25 +11,31 @@ import {
 import { getAuth, signInAnonymously } from "firebase/auth";
 
 const Start = ({ navigation }) => {
+  // States holding users name and background color
   const [name, setName] = useState("");
   const [selectedColor, setSelectedColor] = useState("#090C08");
-  const auth = getAuth(); // Initialize Firebase Authentication
+
+  // Initialize Firebase Authentication
+  const auth = getAuth();
 
   const handleStartChatting = () => {
+    // Sign in anonymously to Firebase Authentication
     signInAnonymously(auth)
       .then((userCredential) => {
         const user = userCredential.user;
+        // Navigate to the Chat screen and pass information as params
         navigation.navigate("Chat", {
           userId: user.uid,
-          name: name,
+          name: name || "Anonymous",
           selectedColor: selectedColor,
         });
       })
       .catch((error) => {
-        // Handle sign-in error here if needed
+        Alert.alert("Unable to sign in, try again later.");
       });
   };
 
+  // Function to handle background color selection
   const handleColorSelect = (color) => {
     setSelectedColor(color);
   };
