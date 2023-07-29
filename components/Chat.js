@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
-import { StyleSheet, View, Text, KeyboardAvoidingView } from "react-native";
-import { GiftedChat, Bubble } from "react-native-gifted-chat";
+import {
+  StyleSheet,
+  View,
+  Text,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { GiftedChat, Bubble, InputToolbar } from "react-native-gifted-chat";
 import {
   collection,
   query,
@@ -8,8 +14,9 @@ import {
   onSnapshot,
   addDoc,
 } from "firebase/firestore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const Chat = ({ route, navigation, db }) => {
+const Chat = ({ route, navigation, db, isConnected }) => {
   // Extracting 'name' and 'selectedColor' from the route parameters
   const { name, selectedColor, userId } = route.params;
 
@@ -18,25 +25,55 @@ const Chat = ({ route, navigation, db }) => {
   // State to manage the chat messages
   const [messages, setMessages] = useState([]);
 
+  const loadCachedMessages = async () => {
+    const cachedMessages = (await AsyncStorage.getItem("messages")) || "[]";
+    setMessages(JSON.parse(cachedMessages));
+  };
+
+  let unsubMessages;
   // Fetching the initial chat messages from Firestore using useEffect and onSnapshot
   useEffect(() => {
     navigation.setOptions({ title: name });
-    const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
-    const unsubMessages = onSnapshot(q, (docs) => {
-      let newMessages = [];
-      docs.forEach((doc) => {
-        newMessages.push({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: new Date(doc.data().createdAt.toMillis()),
-        });
-      });
-      setMessages(newMessages);
-    });
-    return () => {
+    if (isConnected === true) {
       if (unsubMessages) unsubMessages();
+      unsubMessages = null;
+
+      const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
+      unsubMessages = onSnapshot(q, (documentsSnapshot) => {
+        let newMessages = [];
+        documentsSnapshot.forEach((doc) => {
+          newMessages.push({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: new Date(doc.data().createdAt.toMillis()),
+          });
+        });
+        cachedMessages(newMessages);
+        setMessages(newMessages);
+      });
+    } else loadCachedMessages();
+
+    // Clean up function
+    return () => {
+      if (unsubMessages) {
+        unsubMessages();
+      }
     };
-  }, []);
+  }, [isConnected]);
+
+  const cachedMessages = async (messagesToCache) => {
+    try {
+      await AsyncStorage.setItem("messages", JSON.stringify(messagesToCache));
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
+
+  const renderInputToolbar = (props) => {
+    // renderInputToolbar function
+    if (isConnected) return <InputToolbar {...props} />;
+    else return null;
+  };
 
   // Function to handle sending new messages
   const onSend = (newMessages) => {
@@ -76,6 +113,7 @@ const Chat = ({ route, navigation, db }) => {
           _id: userId, // Current user's ID (user ID extracted from route.params)
           name: name, // Current user's name (name extracted from route.params)
         }}
+        renderInputToolbar={renderInputToolbar}
       />
       {Platform.OS === "android" ? (
         // KeyboardAvoidingView used to handle the keyboard on Android devices
