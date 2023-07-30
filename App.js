@@ -1,20 +1,22 @@
-import { useState, useEffect } from "react";
-import { StyleSheet, View, Text, TextInput, Alert } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import Start from "./components/Start";
-import Chat from "./components/Chat";
+import { Alert } from "react-native";
 import { initializeApp } from "firebase/app";
 import {
   getFirestore,
   disableNetwork,
   enableNetwork,
 } from "firebase/firestore";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import Start from "./components/Start";
+import Chat from "./components/Chat";
 import { useNetInfo } from "@react-native-community/netinfo";
+import { useEffect } from "react";
+import { getStorage } from "firebase/storage";
 
 const Stack = createNativeStackNavigator();
 
 const App = () => {
+  // Get the network connection status using the 'useNetInfo' hook
   const connectionStatus = useNetInfo();
 
   // Firebase configuration with credentials
@@ -32,12 +34,16 @@ const App = () => {
 
   // Initialize Cloud Firestore and get a reference to the database
   const db = getFirestore(app);
+  const storage = getStorage(app);
 
+  // Monitor the network connection status and enable/disable Firestore network accordingly
   useEffect(() => {
     if (connectionStatus.isConnected === false) {
+      // If the device loses connection, display an alert and disable Firestore network
       Alert.alert("Connection lost.");
       disableNetwork(db);
     } else if (connectionStatus.isConnected === true) {
+      // If the device reconnects, enable Firestore network
       enableNetwork(db);
     }
   }, [connectionStatus.isConnected]);
@@ -52,6 +58,7 @@ const App = () => {
             <Chat
               isConnected={connectionStatus.isConnected}
               db={db}
+              storage={storage}
               {...props}
             />
           )}
